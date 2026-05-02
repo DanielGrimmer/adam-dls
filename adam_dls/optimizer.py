@@ -157,7 +157,7 @@ class AdamDLS(Optimizer):
 
             # 1. Apply Deterministic Update (using global alignment d_global)
             update_direction = D_g * ((1 - beta1_local) * f_g + beta1_local * d_global * m_g)
-            if group['minimize']:
+            if self.defaults['minimize']:
                 p.sub_(update_direction)
             else:
                 p.add_(update_direction)
