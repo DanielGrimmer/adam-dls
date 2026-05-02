@@ -3,6 +3,4 @@
 # GPU (CUDA): see https://pytorch.org/get-started/locally/ for your platform.
 torch>=2.0.0
 
-# Benchmark and visualization dependencies (not required for the optimizer itself)
-numpy>=1.24.0
-matplotlib>=3.7.0
+# Benchmark and visualization dependencies listed elsewhere (not required for the optimizer itself)
