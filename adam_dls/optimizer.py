@@ -6,9 +6,18 @@ from torch.optim import Optimizer
 
 
 class AdamDLS(Optimizer):
-  
-    def __init__(self, params, lr=2e-3, betas=(0.9, 0.999), eps=1e-8,
-                 mu_sq=2e-4, delta=0, record_history=False, DLS_noise=True):
+    """
+    Direct From Darwin: Adam-DLS (Darwinian Lineage Simulation)
+
+    An evolutionarily faithful version of the Adam optimizer derived from evolutionary first principles.
+    Modifications from vanilla Adam:
+    1. Index shift on second moments & non-trivial initialization (s_0 = (1 - beta2) * f_0^2).
+    2. Rescaling of momentum term based on alignment of current and past gradient.
+    3. Injection of scientifically accurate genetic drift (DLS noise) applied globally.
+    4. Variance limits / Soft-Error handling to respect biological speed limits.
+    """
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
+                 mu_sq=1e-4, delta=0, record_history=False, minimize=False):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate (lr): {lr}")
         if not 0.0 <= eps:
@@ -23,13 +32,13 @@ class AdamDLS(Optimizer):
             raise ValueError(f"Invalid delta value: {delta}")
 
         defaults = dict(lr=lr, betas=betas, eps=eps, mu_sq=mu_sq,
-                        delta=delta, record_history=record_history, DLS_noise=DLS_noise)
+                        delta=delta, record_history=record_history, minimize=minimize)
         super(AdamDLS, self).__init__(params, defaults)
 
         if record_history:
-            self.Dm_g_history = []  
+            self.D_g_history = []
+            self.m_g_history = []
             self.d_history = []
-            self.V_g_history = []
             self.mu_history = []
 
     @torch.no_grad()
@@ -79,36 +88,17 @@ class AdamDLS(Optimizer):
                 m_g = state['m']
                 s_g = state['s']
 
-                # 1. Calculate Vanilla Adam's Additive Momentum D_g m_g
-                hats_g = s_g / (1 - beta2 ** step)
-                D_g = (lr / (hats_g.sqrt() + eps)) / (1 - beta1 ** step)
-                D_g_m_g_vector = D_g * m_g
+                # 1. Calculate Vanilla Adam's Preconditioner D_g
+                s_g_debiased = s_g / (1 - beta2 ** step)
+                D_g = (lr / (s_g_debiased.sqrt() + eps)) / (1 - beta1 ** step)
 
-                if group['record_history']:
-                    self.Dm_g_history.append(D_g_m_g_vector.clone())
-
-                # 2. Compute Explicit Variance (Diagnostics only)
-                if p.numel() == 2:
-                    m_g_T_D_g_m_g_scalar_local = torch.sum(m_g * D_g_m_g_vector)
-                    D_g_diag_matrix = torch.diag(D_g)
-                    V_g_calculated = (1 - beta1) * D_g_diag_matrix
-                    numerator_matrix = torch.outer(D_g_m_g_vector, D_g_m_g_vector)
-                    variance_update = beta1 * (numerator_matrix / (m_g_T_D_g_m_g_scalar_local + 1e-15))
-                    V_g_calculated += torch.where(
-                        m_g_T_D_g_m_g_scalar_local > 1e-12,
-                        variance_update,
-                        torch.zeros_like(V_g_calculated)
-                    )
-                    if group['record_history']:
-                        self.V_g_history.append(V_g_calculated.clone())
-
-                # 3. Compute Next Step's Moments
+                # 2. Compute Next Step's Moments and Preconditioner D_g_plus_1
                 m_g_plus_1 = beta1 * m_g + (1 - beta1) * f_g
                 s_g_plus_1 = beta2 * s_g + (1 - beta2) * f_g ** 2
-                hats_g_plus_1 = s_g_plus_1 / (1 - beta2 ** (step + 1))
-                D_g_plus_1 = (lr / (hats_g_plus_1.sqrt() + eps)) / (1 - beta1 ** (step + 1))
+                s_g_plus_1_debiased = s_g_plus_1 / (1 - beta2 ** (step + 1))
+                D_g_plus_1 = (lr / (s_g_plus_1_debiased.sqrt() + eps)) / (1 - beta1 ** (step + 1))
 
-                # Store components for global stochastic noise generation AND global d_g
+                # 3. Store components for global stochastic noise generation AND global d_g
                 p_list.append(p)
                 f_list.append(f_g)
                 m_list.append(m_g)
@@ -131,6 +121,10 @@ class AdamDLS(Optimizer):
         D_flat = torch.cat([d.view(-1) for d in D_list])
         D_p1_flat = torch.cat([d.view(-1) for d in D_p1_list])
 
+        if group['record_history']:
+            self.D_g_history.append(D_flat.clone())
+            self.m_g_history.append(m_flat.clone())
+
         # Calculate Global Momentum Scalar d_global
         D_m_flat = D_flat * m_flat
         m_T_D_m_global = torch.sum(m_flat * D_m_flat)
@@ -146,13 +140,10 @@ class AdamDLS(Optimizer):
             self.d_history.append(d_global.clone())
 
         # Generate global DLS genetic drift
-        current_mu_sq, xi_global_flat = self._generate_dls_noise(
+        xi_global_flat = self._generate_dls_noise(
             m_flat, m_p1_flat, D_flat, D_p1_flat,
             beta1_global, delta_global, mu_sq_global
         )
-
-        if self.defaults['record_history']:
-            self.mu_history.append(current_mu_sq)
 
         # --- Phase 3: Global Distribution ---
         # Slice the unified noise and apply deterministic + stochastic updates locally
@@ -165,13 +156,15 @@ class AdamDLS(Optimizer):
             D_g = D_list[i]
 
             # 1. Apply Deterministic Update (using global alignment d_global)
-            update_direction = (1 - beta1_local) * f_g + beta1_local * d_global * m_g
-            p.sub_(D_g * update_direction)
+            update_direction = D_g * ((1 - beta1_local) * f_g + beta1_local * d_global * m_g)
+            if group['minimize']:
+                p.sub_(update_direction)
+            else:
+                p.add_(update_direction)
 
             # 2. Apply Stochastic Drift
             xi_p = xi_global_flat[offset : offset + numel].view_as(p)
-            if self.defaults['DLS_noise']:
-                p.add_(xi_p)
+            p.add_(xi_p)
 
             # 3. Commit the state updates
             state = state_list[i]
@@ -215,6 +208,9 @@ class AdamDLS(Optimizer):
         mu_sq_spike = mu_sq + spike
         S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
 
+        if self.defaults['record_history']:
+            self.mu_history.append(mu_sq + deficit)
+
         # Massive N x 2 decomposition
         S_g_sqrt_inv = 1.0 / torch.sqrt(S_g)
         U = torch.stack([S_g_sqrt_inv * y_g, S_g_sqrt_inv * y_g_p1], dim=1)
@@ -234,4 +230,4 @@ class AdamDLS(Optimizer):
         # O(N) Rank-2 Update: Highly efficient for massive networks!
         xi_g_flat = torch.sqrt(S_g) * (z + A @ (K @ (A.T @ z)))
 
-        return mu_sq_spike, xi_g_flat
+        return xi_g_flat
