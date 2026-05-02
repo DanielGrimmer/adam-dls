@@ -42,10 +42,10 @@ from adam_dls import AdamDLS
 model = MyModel()
 optimizer = AdamDLS(
     model.parameters(),
-    lr=2e-3,
+    lr=1e-3,
     betas=(0.9, 0.999),
     eps=1e-8,
-    mu_sq=2e-4,   # mutation rate squared (controls magnitude of genetic drift)
+    mu_sq=1e-4,   # mutation rate squared (controls magnitude of genetic drift)
     delta=0,      # soft-error floor (set > 0 to enforce minimum variance)
 )
 
@@ -62,10 +62,10 @@ for inputs, targets in dataloader:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `lr` | `2e-3` | Learning rate (same as Adam) |
+| `lr` | `1e-3` | Learning rate (same as Adam) |
 | `betas` | `(0.9, 0.999)` | Momentum decay rates (same as Adam) |
 | `eps` | `1e-8` | Numerical stability term (same as Adam) |
-| `mu_sq` | `2e-4` | Mutation rate squared; controls the base magnitude of DLS noise |
+| `mu_sq` | `1e-4` | Mutation rate squared; controls the base magnitude of DLS noise |
 | `delta` | `0` | Soft-error floor; triggers an ad hoc mutation spike if the minimum noise variance falls below this value |
 
 ---
@@ -74,19 +74,10 @@ for inputs, targets in dataloader:
 
 ### Rosenbrock (2D)
 
-The Rosenbrock function `f(x,y) = (a−x)² + b(y−x²)²` with `a=2, b=100` is a standard non-convex benchmark. Adam-DLS converges reliably to the global minimum at `(2, 4)` from arbitrary initializations.
+The Rosenbrock function `f(x,y) = (a−x)² + b(y−x²)²` with `a=2, b=100` is a standard non-convex benchmark. Adam-DLS converges reliably to the global minimum at `(2, 4)` just as the unmodified Adam operator does.
 
-```bash
-python benchmarks/rosenbrock.py
-```
-
-### CIFAR-100 (CNN)
-
-A simple 3-layer CNN on CIFAR-100 demonstrates that Adam-DLS scales to higher-dimensional parameter spaces and more complex architectures. Adam-DLS runs at approximately half the wall-clock speed of Adam on this benchmark; this overhead is intrinsic to the global noise generation and is quantified in the paper.
-
-```bash
-python benchmarks/cifar100_cnn.py
-```
+# Open in Colab or Jupyter:
+benchmarks/Rosenbrock_benchmark.ipynb
 
 ---
 
