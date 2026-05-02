@@ -27,6 +27,7 @@ class AdamDLS(Optimizer):
         super(AdamDLS, self).__init__(params, defaults)
 
         if record_history:
+            self.Dm_g_history = []  
             self.d_history = []
             self.V_g_history = []
             self.mu_history = []
