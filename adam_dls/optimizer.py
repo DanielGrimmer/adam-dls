@@ -223,6 +223,7 @@ class AdamDLS(Optimizer):
 
         C = torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=U.dtype, device=U.device)
         M = R @ C @ R.T
+        M = (M + M.T) / 2            #Guarantee Symmetry
         L, E = torch.linalg.eigh(M)
         A = Q @ E
         K = torch.diag(torch.sqrt(torch.clamp(1.0 + L, min=0.0)) - 1.0)
