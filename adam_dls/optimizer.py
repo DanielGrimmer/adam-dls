@@ -11,10 +11,10 @@ class AdamDLS(Optimizer):
 
     An evolutionarily faithful version of the Adam optimizer derived from evolutionary first principles.
     Modifications from vanilla Adam:
-    1. Index shift on second moments & non-trivial initialization (s_0 = (1 - beta2) * f_0^2).
+    1. Injection of scientifically accurate genetic drift (DLS noise) applied globally. 
+       Variance limits / Soft-Error handling to respect biological speed limits.    
     2. Rescaling of momentum term based on alignment of current and past gradient.
-    3. Injection of scientifically accurate genetic drift (DLS noise) applied globally.
-    4. Variance limits / Soft-Error handling to respect biological speed limits.
+    3. Index shift on second moments & non-trivial initialization (s_0 = (1 - beta2) * f_0^2).
     """
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
                  mu_sq=1e-4, delta=0, record_history=False, minimize=True):
@@ -176,6 +176,38 @@ class AdamDLS(Optimizer):
         return loss
 
     def _generate_dls_noise(self, m_g_flat, m_g_p1_flat, D_g_flat, D_g_p1_flat, beta1, delta, mu_sq):
+
+        """
+        Sample genetic drift  ξ_g ~ N(0, W_g) for one Adam-DLS generation.
+    
+        Implements the DLS noise relation (Appendix A):
+            W_g = μ²I − (V_{g+1} − V_g)
+        where V_g is the Adam-DLS lineage variance.  Because W_g is built from a diagonal
+        matrix S_g perturbed by a signed rank-2 update (+y_g y_g^T − y_{g+1} y_{g+1}^T),
+        its matrix square root W_g^{1/2} is computed in O(N) time: a thin QR
+        decomposition on the N×2 scaled-momentum matrix U reduces the problem to a
+        trivial 2×2 eigendecomposition, after which the noise is applied as a
+        rank-2 update to an isotropic base sample z ~ N(0, I).
+    
+        If W_g is not positive semi-definite — a 'soft error' caused by μ² being
+        too small to accommodate the variance change V_{g+1} − V_g — a one-off
+        mutation spike γ² is added to μ² to restore PSD-ness.  When record_history
+        is enabled, the minimum μ² that would have avoided the spike at each step
+        is recorded in self.mu_history; call check_soft_errors() after training to
+        inspect these without incurring a per-step CPU-GPU sync.
+    
+        Args:
+            m_g_flat    (N,): Flattened first-moment vector at generation g.
+            m_g_p1_flat (N,): Flattened first-moment vector at generation g+1.
+            D_g_flat    (N,): Flattened diagonal preconditioner at generation g.
+            D_g_p1_flat (N,): Flattened diagonal preconditioner at generation g+1.
+            beta1       (float): First-moment decay rate β₁.
+            delta       (float): Soft-error safety floor δ ≥ 0.
+            mu_sq       (float): Baseline mutation rate μ² ≥ 0.
+    
+        Returns:
+            xi_g_flat   (N,): Sampled genetic drift ξ_g ~ N(0, W_g).
+        """
         
         # Fully vectorized mathematical components using +1e-15 to protect against GPU NaN halts
         mDm_g_scalar = torch.sum(m_g_flat * D_g_flat * m_g_flat)
@@ -207,13 +239,6 @@ class AdamDLS(Optimizer):
         spike = torch.clamp(deficit, min=0.0)
         mu_sq_spike = mu_sq + spike
         S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
-
-        if spike > 0:
-            warnings.warn(
-                f"Adam-DLS soft error: An ad hoc mutation spike was required!"
-                f"Consider increasing mu_sq above {(mu_sq + spike).item():.2e} to avoid this.",
-                UserWarning
-            )
         
         # This records the smallest mutation rate which would be necessary to cover for the down-sampling at this step
         # The resulting mu_history is therefore useful for setting a relatively small mutation rate that avoids soft errors (ad hoc mutation spikes)
@@ -241,3 +266,23 @@ class AdamDLS(Optimizer):
         xi_g_flat = torch.sqrt(S_g) * (z + A @ (K @ (A.T @ z)))
 
         return xi_g_flat
+
+    def check_soft_errors(self):
+        """
+        Call after training to check whether any soft errors (mutation spikes)
+        occurred. Triggers one CPU-GPU sync. Returns the number of steps
+        where a spike was required and the maximum spike magnitude.
+        """
+        if not self.defaults['record_history']:
+            raise RuntimeError("Enable record_history=True to check soft errors.")
+        spikes = torch.stack(self.mu_history) - self.defaults['mu_sq']
+        n_errors = int((spikes > 1e-12).sum().item())
+        max_spike = spikes.max().item()
+        if n_errors > 0:
+            import warnings
+            warnings.warn(
+                f"Soft errors occurred at {n_errors} steps (max spike: {max_spike:.2e}). "
+                f"Consider raising mu_sq above {self.defaults['mu_sq'] + max_spike:.2e}.",
+                UserWarning
+            )
+        return n_errors, max_spike
