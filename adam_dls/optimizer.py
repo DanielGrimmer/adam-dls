@@ -208,6 +208,7 @@ class AdamDLS(Optimizer):
         mu_sq_spike = mu_sq + spike
         S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
 
+        #This records the smallest mutation rate which would be necesary to cover this down-sampling
         if self.defaults['record_history']:
             self.mu_history.append(mu_sq + deficit)
 
