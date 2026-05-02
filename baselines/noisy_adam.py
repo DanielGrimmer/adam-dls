@@ -64,6 +64,7 @@ class NoisyAdam(Optimizer):
                 hats_g_plus_1 = s_g_plus_1 / (1 - beta2 ** step)
 
                 # --- 3. Calculate the pre-conditioner D_g and apply deterministic update ---.
+                # Note: D_g unused in SGD mode but computed for code consistency
                 D_g = (lr / (hats_g_plus_1.sqrt() + eps)) / (1 - beta1 ** step)
                 
                 if group['just_SGD']:
