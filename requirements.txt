@@ -6,4 +6,3 @@ torch>=2.0.0
 # Benchmark and visualization dependencies (not required for the optimizer itself)
 numpy>=1.24.0
 matplotlib>=3.7.0
-torchvision>=0.15.0  # required for benchmarks
