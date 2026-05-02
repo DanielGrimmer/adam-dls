@@ -76,8 +76,7 @@ for inputs, targets in dataloader:
 
 The Rosenbrock function `f(x,y) = (a−x)² + b(y−x²)²` with `a=2, b=100` is a standard non-convex benchmark. Adam-DLS converges reliably to the global minimum at `(2, 4)` just as the unmodified Adam operator does.
 
-# Open in Colab or Jupyter:
-benchmarks/Rosenbrock_benchmark.ipynb
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/danielgrimmer/adam-dls/blob/main/benchmarks/Rosenbrock_benchmark.ipynb)
 
 ---
 
