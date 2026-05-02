@@ -3,7 +3,7 @@ message: "If you use Adam-DLS in your research, please cite the paper below."
 type: software
 title: "adam-dls: Darwinian Lineage Simulation Optimizer"
 version: 0.1.0
-date-released: "2026"
+date-released: "2026-05-02"
 repository-code: "https://github.com/danielgrimmer/adam-dls"
 license: MIT
 
