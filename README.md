@@ -2,7 +2,7 @@
 
 **Adam-DLS** is a PyTorch optimizer derived from evolutionary first principles. It modifies the Adam optimizer in three principled ways (detailed below) each derived from the asexual Fisher–Wright equivalence proved in the accompanying paper. After this minor surgery, the Adam optimizer becomes a scientifically valid simulations of Darwinian evolution *in silico*. 
 
-> **Paper:** [Direct From Darwin: Deriving Advanced Optimizers From Evolutionary First Principles](https://arxiv.org/abs/XXXX.XXXXX)  
+> **Paper:** Direct From Darwin: Deriving Advanced Optimizers From Evolutionary First Principles *(arXiv link coming soon)*  
 > Daniel Grimmer · Philosophy, Yale University · *Evolutionary Computation* (submitted May, 2026)
 
 ---
