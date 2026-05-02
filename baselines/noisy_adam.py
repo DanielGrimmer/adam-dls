@@ -7,7 +7,7 @@ from torch.optim import Optimizer
 
 class NoisyAdam(Optimizer):
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 mu_sq=1e-4, just_SGD=False, minimize=False):
+                 mu_sq=1e-4, just_SGD=False, minimize=True):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate (lr): {lr}")
         if not 0.0 <= eps:
