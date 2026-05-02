@@ -58,12 +58,12 @@ class NoisyAdam(Optimizer):
                 m_g = state['m']
                 s_g = state['s']
 
-                # --- 1. Compute g+1 moments ---
+                # --- Compute g+1 moments ---
                 m_g_plus_1 = beta1 * m_g + (1 - beta1) * f_g
                 s_g_plus_1 = beta2 * s_g + (1 - beta2) * f_g ** 2
                 hats_g_plus_1 = s_g_plus_1 / (1 - beta2 ** step)
 
-                # --- 3. Calculate the pre-conditioner D_g and apply deterministic update ---.
+                # --- Calculate the pre-conditioner D_g and apply deterministic update ---.
                 # Note: D_g unused in SGD mode but computed for code consistency
                 D_g = (lr / (hats_g_plus_1.sqrt() + eps)) / (1 - beta1 ** step)
                 
@@ -77,11 +77,11 @@ class NoisyAdam(Optimizer):
                 else:
                     p.add_(update_direction)
                 
-                # --- 4. Generate Naive Noise (\xi_g) ---
+                # --- Generate Naive Noise (\xi_g) ---
                 xi_g = math.sqrt(mu_sq) * torch.randn_like(p)
                 p.add_(xi_g)
 
-                # --- 5. Update states for next generation ---
+                # --- Update states for next generation ---
                 state['m'].copy_(m_g_plus_1)
                 state['s'].copy_(s_g_plus_1)
 
