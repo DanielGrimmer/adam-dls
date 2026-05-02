@@ -3,7 +3,7 @@
 import math
 import torch
 from torch.optim import Optimizer
-
+import warnings
 
 class AdamDLS(Optimizer):
     """
@@ -208,16 +208,23 @@ class AdamDLS(Optimizer):
         mu_sq_spike = mu_sq + spike
         S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
 
+        if spike > 0:
+            warnings.warn(
+                f"Adam-DLS soft error: An ad hoc mutation spike was required!"
+                f"Consider increasing mu_sq above {(mu_sq + spike).item():.2e} to avoid this.",
+                UserWarning
+            )
+        
         # This records the smallest mutation rate which would be necessary to cover for the down-sampling at this step
         # The resulting mu_history is therefore useful for setting a relatively small mutation rate that avoids soft errors (ad hoc mutation spikes)
         if self.defaults['record_history']:
             self.mu_history.append(mu_sq + deficit)
 
-        # Massive N x 2 decomposition
+        # N x 2 decomposition
         S_g_sqrt_inv = 1.0 / torch.sqrt(S_g)
         U = torch.stack([S_g_sqrt_inv * y_g, S_g_sqrt_inv * y_g_p1], dim=1)
 
-        # Note: For massive parameter tensors (N > 10M), this N x 2 QR decomposition
+        # Note: For high-dimensional parameter tensors (N > 10M), this N x 2 QR decomposition
         # could be replaced with an explicit Gram-Schmidt step for optimization,
         # but torch.linalg.qr is maintained here for numerical stability and readability.
         Q, R = torch.linalg.qr(U, mode='reduced')
