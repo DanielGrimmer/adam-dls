@@ -7,7 +7,7 @@ from torch.optim import Optimizer
 
 class NoisyAdam(Optimizer):
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 mu_sq=2e-4, just_SGD=False, record_history=False):
+                 mu_sq=1e-4, just_SGD=False, minimize=False):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate (lr): {lr}")
         if not 0.0 <= eps:
@@ -19,11 +19,8 @@ class NoisyAdam(Optimizer):
         if not 0.0 <= mu_sq:
             raise ValueError(f"Invalid mutation rate: {mu_sq}")            
 
-        defaults = dict(lr=lr, betas=betas, eps=eps, mu_sq=mu_sq, just_SGD=just_SGD,record_history=record_history)
+        defaults = dict(lr=lr, betas=betas, eps=eps, mu_sq=mu_sq, just_SGD=just_SGD, minimize=minimize)
         super(NoisyAdam, self).__init__(params, defaults)
-
-        # Trackers for plotting
-        self.Dm_g_history = []
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -46,9 +43,9 @@ class NoisyAdam(Optimizer):
                 f_g = p.grad
                 state = self.state[p]
 
-                # State initialization (incorporating s_0 = 0)
+                # State initialization (with s_0 = 0)
                 if len(state) == 0:
-                    # Note: PyTorch step 1 mathematically corresponds to calculating g=1 from g=0
+                    # Note: PyTorch step 1 corresponds to using generation g=0 to calculate g=1
                     state['step'] = 0
                     state['m'] = torch.zeros_like(p, memory_format=torch.preserve_format)
                     state['s'] = torch.zeros_like(p, memory_format=torch.preserve_format)
@@ -65,27 +62,24 @@ class NoisyAdam(Optimizer):
                 s_g_plus_1 = beta2 * s_g + (1 - beta2) * f_g ** 2
                 hats_g_plus_1 = s_g_plus_1 / (1 - beta2 ** step)
 
-                # --- 3. Calculate D_g ---
-                # g = step - 1. Therefore, exponent on D_g is step, and on D_g+1 is step + 1.
+                # --- 3. Calculate the pre-conditioner D_g and apply deterministic update ---.
                 D_g = (lr / (hats_g_plus_1.sqrt() + eps)) / (1 - beta1 ** step)
-
-                # Track D_g m_g for Adam analysis
-                Dm_g = D_g * m_g
-                if group['record_history']: self.Dm_g_history.append(Dm_g.clone()) # Added for tracking
-
-                # --- 4. Generate Naive Noise (\xi_g) ---
-
-                xi_g = math.sqrt(mu_sq) * torch.randn_like(p)
-
-                # We use .sub_() to subtract the gradient step
+                
                 if group['just_SGD']:
-                    p.sub_(lr * f_g)
+                    update_direction = lr * f_g
                 else:
-                    p.sub_(D_g * m_g_plus_1)
+                    update_direction = D_g * m_g_plus_1
 
+                if group['minimize']:
+                    p.sub_(update_direction)
+                else:
+                    p.add_(update_direction)
+                
+                # --- 4. Generate Naive Noise (\xi_g) ---
+                xi_g = math.sqrt(mu_sq) * torch.randn_like(p)
                 p.add_(xi_g)
 
-                # --- 6. Update states for next generation ---
+                # --- 5. Update states for next generation ---
                 state['m'].copy_(m_g_plus_1)
                 state['s'].copy_(s_g_plus_1)
 
