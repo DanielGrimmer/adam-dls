@@ -17,7 +17,7 @@ class AdamDLS(Optimizer):
     4. Variance limits / Soft-Error handling to respect biological speed limits.
     """
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 mu_sq=1e-4, delta=0, record_history=False, minimize=False):
+                 mu_sq=1e-4, delta=0, record_history=False, minimize=True):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate (lr): {lr}")
         if not 0.0 <= eps:
