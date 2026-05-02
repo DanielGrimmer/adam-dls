@@ -65,7 +65,7 @@ for inputs, targets in dataloader:
 | `eps` | `1e-8` | Numerical stability term (same as Adam) |
 | `mu_sq` | `1e-4` | Mutation rate squared; controls the base magnitude of DLS noise |
 | `delta` | `0` | Soft-error floor; triggers an ad hoc mutation spike if the minimum noise variance falls below this value |
-| `record_history` | `False` | If on, it records various aspects of the Adam-DLS run for diagonostics and parameter tuning |
+| `record_history` | `False` | If on, it records various aspects of the Adam-DLS run for diagnostics and parameter tuning |
 | `minimize` | `True` | Following the convention that objective functions are to be minimized (although fitness is to be maximized)|
 ---
 
