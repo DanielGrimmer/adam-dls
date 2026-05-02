@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use Adam-DLS in your research, please cite the paper below."
 type: software
 title: "adam-dls: Darwinian Lineage Simulation Optimizer"
-version: 1.0.0
+version: 0.1.0
 date-released: "2026"
 repository-code: "https://github.com/danielgrimmer/adam-dls"
 license: MIT
