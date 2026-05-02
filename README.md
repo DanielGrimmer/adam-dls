@@ -69,6 +69,8 @@ for inputs, targets in dataloader:
 | `minimize` | `True` | Following the convention that objective functions are to be minimized (although fitness is to be maximized)|
 ---
 
+Tuning mu_sq: Run with record_history=True, then call optimizer.check_soft_errors() after training. This performs a single CPU-GPU sync and warns you if mu_sq was too small at any step, along with the minimum value that would have avoided spikes. See also the diagnostic panel in the Rosenbrock benchmark.
+
 ## Benchmarks
 
 ### Rosenbrock (2D)
