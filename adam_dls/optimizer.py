@@ -121,7 +121,7 @@ class AdamDLS(Optimizer):
         D_flat = torch.cat([d.view(-1) for d in D_list])
         D_p1_flat = torch.cat([d.view(-1) for d in D_p1_list])
 
-        if group['record_history']:
+        if self.defaults['record_history']:
             self.D_g_history.append(D_flat.clone())
             self.m_g_history.append(m_flat.clone())
 
