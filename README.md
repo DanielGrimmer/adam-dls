@@ -1,6 +1,6 @@
 # Adam-DLS: A Darwinian Lineage Simulation Optimizer
 
-**Adam-DLS** is a PyTorch optimizer derived from evolutionary first principles. It modifies the Adam optimizer in three principled ways (detailed below) each derived from the asexual Fisher–Wright equivalence proved in the accompanying paper. After this minor surgery, the Adam optimizer becomes a scientifically valid simulations of Darwinian evolution *in silico*. 
+**Adam-DLS** is a PyTorch optimizer derived from evolutionary first principles. It modifies the Adam optimizer in three principled ways (detailed below) each derived from the asexual Fisher–Wright equivalence proved in the accompanying paper. After this minor surgery, the Adam optimizer becomes a scientifically valid simulation of Darwinian evolution *in silico*. 
 
 > **Paper:** Direct From Darwin: Deriving Advanced Optimizers From Evolutionary First Principles *(arXiv link coming soon)*  
 > Daniel Grimmer · Philosophy, Yale University · *Evolutionary Computation* (submitted May, 2026)
@@ -65,7 +65,8 @@ for inputs, targets in dataloader:
 | `eps` | `1e-8` | Numerical stability term (same as Adam) |
 | `mu_sq` | `1e-4` | Mutation rate squared; controls the base magnitude of DLS noise |
 | `delta` | `0` | Soft-error floor; triggers an ad hoc mutation spike if the minimum noise variance falls below this value |
-
+| `record_history` | `False` | If on, it records various aspects of the Adam-DLS run for diagonostics and parameter tuning |
+| `minimize` | `True` | Following the convention that objective functions are to be minimized (although fitness is to be maximized)|
 ---
 
 ## Benchmarks
@@ -74,7 +75,7 @@ for inputs, targets in dataloader:
 
 The Rosenbrock function `f(x,y) = (a−x)² + b(y−x²)²` with `a=2, b=100` is a standard non-convex benchmark. Adam-DLS converges reliably to the global minimum at `(2, 4)` just as the unmodified Adam operator does.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/danielgrimmer/adam-dls/blob/main/benchmarks/Rosenbrock_benchmark.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/danielgrimmer/adam-dls/blob/main/benchmarks/Rosenbrock_benchmark.ipynb) or run locally with jupyter notebook benchmarks/Rosenbrock_benchmark.ipynb
 
 ---
 
