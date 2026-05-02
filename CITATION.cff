@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use Adam-DLS in your research, please cite the paper below."
+type: software
+title: "adam-dls: Darwinian Lineage Simulation Optimizer"
+version: 1.0.0
+date-released: "2026"
+repository-code: "https://github.com/danielgrimmer/adam-dls"
+license: MIT
+
+authors:
+  - family-names: Grimmer
+    given-names: Daniel
+    email: daniel.grimmer@yale.edu
+    affiliation: "Department of Philosophy, Yale University"
+
+preferred-citation:
+  type: article
+  title: "Direct From Darwin: Deriving Advanced Optimizers From Evolutionary First Principles"
+  authors:
+    - family-names: Grimmer
+      given-names: Daniel
+      email: daniel.grimmer@yale.edu
+      affiliation: "Department of Philosophy, Yale University"
+  journal: "Evolutionary Computation"
+  year: 2026
+  url: "https://arxiv.org/abs/XXXX.XXXXX"
+  notes: "arXiv:XXXX.XXXXX [cs.NE]"
+
+keywords:
+  - evolutionary computation
+  - population genetics
+  - gradient descent
+  - Adam optimizer
+  - Fisher-Wright
+  - optimization
+  - PyTorch
+  - genetic drift
+  - machine learning
