@@ -1,9 +1,9 @@
 # baselines/optimizer.py
+#NoisyAdam is a baseline comparison optimizer used in benchmarking. It is not part of the Adam-DLS package and is not intended for production use.
 
 import math
 import torch
 from torch.optim import Optimizer
-
 
 class NoisyAdam(Optimizer):
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
