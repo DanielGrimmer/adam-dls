@@ -79,6 +79,7 @@ The Rosenbrock function `f(x,y) = (a−x)² + b(y−x²)²` with `a=2, b=100` is
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/danielgrimmer/adam-dls/blob/main/benchmarks/Rosenbrock_benchmark.ipynb) or run locally with jupyter notebook benchmarks/Rosenbrock_benchmark.ipynb
 
+[![Open in nbviewer](https://img.shields.io/badge/render-nbviewer-orange?logo=jupyter)](https://nbviewer.org/github/danielgrimmer/adam-dls/blob/main/benchmarks/Rosenbrock_benchmark.ipynb)
 ---
 
 ## Citation
