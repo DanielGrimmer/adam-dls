@@ -5,6 +5,8 @@
 > **Paper:** Direct From Darwin: Deriving Advanced Optimizers From Evolutionary First Principles *(arXiv link coming soon)*  
 > Daniel Grimmer · Philosophy, Yale University · *Evolutionary Computation* (submitted May, 2026)
 
+Personal Academics Website: https://users.ox.ac.uk/~pemb6003/index.html
+
 ---
 
 ## Overview:
