@@ -149,7 +149,7 @@ class AdamDLS(Optimizer):
         if self.defaults['naive_noise']:
             # Generate naive noise
             xi_global_flat = torch.sqrt(mu_sq) * torch.randn_like(m_flat)
-        else
+        else:
             # Generate global DLS genetic drift
             xi_global_flat = self._generate_dls_noise(
                 m_flat, m_p1_flat, D_flat, D_p1_flat,
