@@ -41,6 +41,10 @@ class AdamDLS(Optimizer):
             self.d_history = []
             self.mu_history = []
 
+        self._noise_call_count = 0
+        self._spike_count = 0
+        self._max_spike = 0.0
+    
     @torch.no_grad()
     def step(self, closure=None):
         loss = None
@@ -245,6 +249,20 @@ class AdamDLS(Optimizer):
         if self.defaults['record_history']:
             self.mu_history.append(mu_sq + deficit)
 
+        # Track spike statistics and report every 1000 calls
+        self._noise_call_count += 1
+        spike_val = spike.item()
+        if spike_val > 1e-12:
+            self._spike_count += 1
+            if spike_val > self._max_spike:
+                self._max_spike = spike_val
+        if self._noise_call_count % 1000 == 0:
+            print(
+                f"[AdamDLS | call {self._noise_call_count}] "
+                f"Soft-error spikes: {self._spike_count} / {self._noise_call_count} steps | "
+                f"Largest spike: {self._max_spike:.2e}"
+            )
+        
         # N x 2 decomposition
         S_g_sqrt_inv = 1.0 / torch.sqrt(S_g)
         U = torch.stack([S_g_sqrt_inv * y_g, S_g_sqrt_inv * y_g_p1], dim=1)
