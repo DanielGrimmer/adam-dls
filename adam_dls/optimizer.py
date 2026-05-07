@@ -38,9 +38,10 @@ class AdamDLS(Optimizer):
                         naive_noise=naive_noise, minimize=minimize)
         super(AdamDLS, self).__init__(params, defaults)
 
-        if record_history:
+        if record_vector_history:
             self.D_g_history = []
             self.m_g_history = []
+        if record_scalar_history:
             self.d_history = []
             self.mu_history = []
 
