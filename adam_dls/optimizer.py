@@ -251,16 +251,16 @@ class AdamDLS(Optimizer):
 
         # Track spike statistics and report every 1000 calls
         self._noise_call_count += 1
-        spike_val = spike.item()
-        if spike_val > 1e-12:
+        spike_val = mu_sq_spike.item()
+        if spike_val > mu_sq:
             self._spike_count += 1
             if spike_val > self._max_spike:
                 self._max_spike = spike_val
-        if self._noise_call_count % 1000 == 0:
+        if self._noise_call_count % 10000 == 0:
             print(
                 f"[AdamDLS | call {self._noise_call_count}] "
                 f"Soft-error spikes: {self._spike_count} / {self._noise_call_count} steps | "
-                f"Largest spike: {self._max_spike:.2e}"
+                f"Largest spike: {self._max_spike:.3e}"
             )
         
         # N x 2 decomposition
