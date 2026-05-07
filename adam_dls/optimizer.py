@@ -260,7 +260,7 @@ class AdamDLS(Optimizer):
         # Track spike statistics and report every 1000 calls
         self._noise_call_count += 1
         spike_val = mu_sq_spike.item()
-        if spike_val > mu_sq:
+        if spike_val > 1.001 * mu_sq:
             self._spike_count += 1
             if spike_val > self._max_spike and self._spike_count > 5:
                 self._max_spike = spike_val
