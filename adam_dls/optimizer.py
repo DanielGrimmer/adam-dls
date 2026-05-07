@@ -203,7 +203,7 @@ class AdamDLS(Optimizer):
     
         If W_g is not positive semi-definite — a 'soft error' caused by μ² being
         too small to accommodate the variance change V_{g+1} − V_g — a one-off
-        mutation spike γ² is added to μ² to restore PSD-ness.  When record_history
+        mutation spike γ² is added to μ² to restore PSD-ness.  When record_scalar_history
         is enabled, the minimum μ² that would have avoided the spike at each step
         is recorded in self.mu_history; call check_soft_errors() after training to
         inspect these without incurring a per-step CPU-GPU sync.
@@ -264,11 +264,10 @@ class AdamDLS(Optimizer):
             self._spike_count += 1
             if spike_val > self._max_spike:
                 self._max_spike = spike_val
-        if self._noise_call_count % 10000 == 0 and self._max_spike > mu_sq:
-            print(
+                print(
                 f"Soft-error spikes: {self._spike_count} / {self._noise_call_count} steps | "
                 f"Largest spike: {self._max_spike:.3e}"
-            )
+                )
         
         # N x 2 decomposition
         S_g_sqrt_inv = 1.0 / torch.sqrt(S_g)
@@ -298,8 +297,8 @@ class AdamDLS(Optimizer):
         occurred. Triggers one CPU-GPU sync. Returns the number of steps
         where a spike was required and the maximum spike magnitude.
         """
-        if not self.defaults['record_history']:
-            raise RuntimeError("Enable record_history=True to check soft errors.")
+        if not self.defaults['record_scalar_history']:
+            raise RuntimeError("Enable record_scalar_history=True to check soft errors.")
         spikes = torch.stack(self.mu_history) - self.defaults['mu_sq']
         n_errors = int((spikes > 1e-12).sum().item())
         max_spike = spikes.max().item()
