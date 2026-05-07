@@ -47,7 +47,7 @@ class AdamDLS(Optimizer):
 
         self._noise_call_count = 0
         self._spike_count = 0
-        self._max_spike = 0.0
+        self._max_spike = mu_sq
     
     @torch.no_grad()
     def step(self, closure=None):
