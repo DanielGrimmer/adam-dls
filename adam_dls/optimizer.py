@@ -256,7 +256,7 @@ class AdamDLS(Optimizer):
             self._spike_count += 1
             if spike_val > self._max_spike:
                 self._max_spike = spike_val
-        if self._noise_call_count % 10000 == 0:
+        if self._noise_call_count % 10000 == 0 and self._max_spike > mu_sq:
             print(
                 f"[AdamDLS | call {self._noise_call_count}] "
                 f"Soft-error spikes: {self._spike_count} / {self._noise_call_count} steps | "
