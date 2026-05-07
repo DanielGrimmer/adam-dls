@@ -15,9 +15,11 @@ class AdamDLS(Optimizer):
        Variance limits / Soft-Error handling to respect biological speed limits.    
     2. Rescaling of momentum term based on alignment of current and past gradient.
     3. Index shift on second moments & non-trivial initialization (s_0 = (1 - beta2) * f_0^2).
+
+    To run Adam-DLS without noise, set naive_noise=true and mu_sq=0.
     """
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 mu_sq=1e-4, delta=0, record_history=False, minimize=True):
+                 mu_sq=1e-4, delta=0, record_scalar_history=False, record_vector_history=False, naive_noise=False, minimize=True):
         if not 0.0 <= lr:
             raise ValueError(f"Invalid learning rate (lr): {lr}")
         if not 0.0 <= eps:
@@ -31,8 +33,9 @@ class AdamDLS(Optimizer):
         if not 0.0 <= delta:
             raise ValueError(f"Invalid delta value: {delta}")
 
-        defaults = dict(lr=lr, betas=betas, eps=eps, mu_sq=mu_sq,
-                        delta=delta, record_history=record_history, minimize=minimize)
+        defaults = dict(lr=lr, betas=betas, eps=eps, mu_sq=mu_sq, delta=delta,
+                        record_scalar_history=record_scalar_history, record_vector_history=record_vector_history,
+                        naive_noise=naive_noise, minimize=minimize)
         super(AdamDLS, self).__init__(params, defaults)
 
         if record_history:
@@ -125,7 +128,7 @@ class AdamDLS(Optimizer):
         D_flat = torch.cat([d.view(-1) for d in D_list])
         D_p1_flat = torch.cat([d.view(-1) for d in D_p1_list])
 
-        if self.defaults['record_history']:
+        if self.defaults['record_vector_history']:
             self.D_g_history.append(D_flat.clone())
             self.m_g_history.append(m_flat.clone())
 
@@ -140,14 +143,18 @@ class AdamDLS(Optimizer):
             torch.tensor(1.0, device=m_flat.device)
         )
 
-        if self.defaults['record_history']:
+        if self.defaults['record_scalar_history']:
             self.d_history.append(d_global.clone())
 
-        # Generate global DLS genetic drift
-        xi_global_flat = self._generate_dls_noise(
-            m_flat, m_p1_flat, D_flat, D_p1_flat,
-            beta1_global, delta_global, mu_sq_global
-        )
+        if self.defaults['naive_noise']:
+            # Generate naive noise
+            xi_global_flat = torch.sqrt(mu_sq) * torch.randn_like(m_flat)
+        else
+            # Generate global DLS genetic drift
+            xi_global_flat = self._generate_dls_noise(
+                m_flat, m_p1_flat, D_flat, D_p1_flat,
+                beta1_global, delta_global, mu_sq_global
+            )
 
         # --- Phase 3: Global Distribution ---
         # Slice the unified noise and apply deterministic + stochastic updates locally
@@ -246,7 +253,7 @@ class AdamDLS(Optimizer):
         
         # This records the smallest mutation rate which would be necessary to cover for the down-sampling at this step
         # The resulting mu_history is therefore useful for setting a relatively small mutation rate that avoids soft errors (ad hoc mutation spikes)
-        if self.defaults['record_history']:
+        if self.defaults['record_scalar_history']:
             self.mu_history.append(mu_sq + deficit)
 
         # Track spike statistics and report every 1000 calls
