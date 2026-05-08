@@ -23,9 +23,8 @@ preferred-citation:
       affiliation: "Department of Philosophy, Yale University"
   journal: "Evolutionary Computation"
   year: 2026
-  #url: "https://arxiv.org/abs/XXXX.XXXXX"
-  #notes: "arXiv:XXXX.XXXXX [cs.NE]"
-  notes: "(arXiv link coming soon)"
+  url: "https://arxiv.org/abs/2605.05284"
+  notes: "arXiv:2605.05284 [cs.NE]"
 
 
 keywords:
