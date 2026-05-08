@@ -240,22 +240,47 @@ class AdamDLS(Optimizer):
             torch.zeros_like(m_g_p1_flat)
         )
 
-        # Compute minimum global variance constraint
-        S_g = mu_sq - (1 - beta1) * (D_g_p1_flat - D_g_flat)
-
-        s_min = torch.min(S_g)
+        # 1. Minimum eigenvalue of the diagonal component (1 - beta1)(D_g - D_{g+1})
+        D_diff = (1.0 - beta1) * (D_g_flat - D_g_p1_flat)
+        lambda_min_D = torch.min(D_diff)
+        
+        # 2. Minimum eigenvalue of the rank-2 component (y_g y_g^T - y_{g+1} y_{g+1}^T)
+        norm_y_g_sq = torch.sum(y_g ** 2)
         norm_y_g_p1_sq = torch.sum(y_g_p1 ** 2)
-
-        # Calculate and apply potential Soft-Error spike
-        deficit = delta - (s_min - norm_y_g_p1_sq)
+        norm_sum = torch.sqrt(torch.sum((y_g + y_g_p1) ** 2) + 1e-15)
+        norm_diff = torch.sqrt(torch.sum((y_g_p1 - y_g) ** 2) + 1e-15)
+        
+        lambda_min_Y = 0.5 * (norm_y_g_sq - norm_y_g_p1_sq - norm_sum * norm_diff)
+        
+        # 3. Calculate required baseline mutation rate to maintain W_g >= delta * I
+        mu_sq_req = delta - lambda_min_D - lambda_min_Y
+        
+        # 4. Calculate and apply potential Soft-Error spike
+        deficit = mu_sq_req - mu_sq
         spike = torch.clamp(deficit, min=0.0)
         mu_sq_spike = mu_sq + spike
-        S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
+        
+        # Build S_g using the safe spiked mutation rate
+        S_g = mu_sq_spike + D_diff
+
+
+        
+        # Compute minimum global variance constraint
+        #S_g = mu_sq - (1 - beta1) * (D_g_p1_flat - D_g_flat)
+
+        #s_min = torch.min(S_g)
+        #norm_y_g_p1_sq = torch.sum(y_g_p1 ** 2)
+
+        # Calculate and apply potential Soft-Error spike
+        #deficit = delta - (s_min - norm_y_g_p1_sq)
+        #spike = torch.clamp(deficit, min=0.0)
+        #mu_sq_spike = mu_sq + spike
+        #S_g = mu_sq_spike - (1 - beta1) * (D_g_p1_flat - D_g_flat)
         
         # This records the smallest mutation rate which would be necessary to cover for the down-sampling at this step
         # The resulting mu_history is therefore useful for setting a relatively small mutation rate that avoids soft errors (ad hoc mutation spikes)
         if self.defaults['record_scalar_history']:
-            self.mu_history.append(mu_sq + deficit)
+            self.mu_history.append(mu_sq_req.item())
 
         # Track spike statistics and report every 1000 calls
         self._noise_call_count += 1
