@@ -7,7 +7,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/danielgrimmer/adam-dls"
-Paper = "https://arxiv.org/abs/XXXX.XXXXX"
+Paper = "https://arxiv.org/abs/2605.05284"
 
 [build-system]
 requires = ["setuptools>=61"]
